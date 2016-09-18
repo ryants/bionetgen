@@ -145,31 +145,112 @@ class NucObject(object):
 	def verify(self):
 		return verifyNucleotideObject(self.seq,self.basepairs)
 		
+	def toGML(self,filename):
+		outstr = makeGMLString(self.seq,self.basepairs)
+		f=open(filename,'w')
+		f.write(outstr)
+		f.close()
+		return 
+		
+	
+def makeGMLString(seq,basepairs):
+	baselist = [None]*len(seq)
+	openpairs = dq()
+	currentsugar = ''
+	prevbase = None
+	currbase = None
+	idnum = -1
+	sugarbonds = []
+	pairbonds = []
+	for i,base in enumerate(seq):
+		currbase = i
+		if base=='D' or base =='d' or base=='R' or base =='r':
+			currentsugar = base.lower()
+			prevbase = None
+			baselist[i] = None
+			continue
+		
+		name = currentsugar + base.upper()
+		idnum = idnum + 1
+		baselist[currbase] = {'name':name,'id':idnum}
+		if prevbase is not None:
+			x = baselist[prevbase]
+			y = baselist[currbase]
+			sugarbonds.append((x['id'],y['id']))
+		if basepairs[i]=='(':
+			openpairs.append(i)
+		elif basepairs[i]==')':
+			x = baselist[openpairs.pop()]
+			y = baselist[i]
+			pairbonds.append((x['id'],y['id']))
+		else:
+			pass
+		prevbase = currbase
+		
+	nodes = [nodestring(x) for x in baselist if x is not None]
+	edges1 = [edgestring(x[0],x[1],True,False) for x in sugarbonds]
+	edges2 = [edgestring(x[0],x[1],False,True) for x in pairbonds]
+	outstr = graphstring(nodes+edges1+edges2)
+	return outstr
+		
+def nodestring(node):
+	idstr = "id "+str(node['id'])
+	labelstr = "label \""+node['name']+"\""
+	colordict = {'A':'#fb8072','T':'#bebada','U':'#bebada',
+	'C':'#ffffb3','G':'#8dd3c7','X':'#999999'}
+	fillstr = "fill \""+colordict[node['name'][1]]+"\""
+	typestr = "type \"ellipse\""
+	outlinestr = "outline \"#999999\""
+	graphics = " ".join(["graphics","[",typestr,fillstr,outlinestr,"]"])
+	outstr = " ".join(["node", "[", idstr,labelstr,graphics,"]"])
+	return outstr
 
+def edgestring(source,target,directed=False,dashed=False):
+	sourcestr = "source " + str(source)
+	targetstr = "target " + str(target)
+	fillstr = "fill \"#999999\""
+	sourceArrow = "sourceArrow \"none\""
+	if directed:
+		targetArrow = "targetArrow \"standard\""
+	else:
+		targetArrow = "targetArrow \"none\""
+	if dashed:
+		style = "style \"dashed\""
+	else:
+		style = "style \"line\""
+	graphics = " ".join(["graphics","[",fillstr,style,sourceArrow,targetArrow,"]"])
+	outstr = " ".join(["edge","[",sourcestr,targetstr,graphics,"]"])
+	return outstr
+	
+def graphstring(strings):
+	strs = ["graph","[","directed 1"] + strings + ["]"]
+	return "\n".join(strs)
+	
+	
 		
 def verifyNucleotideObject(seq,basepairs):
-		cond01 = len(seq)==len(basepairs)
-		if not cond01:
-			print "Sequence length not the same as basepair notation length."
-			return False
-		cond02 = re.search(r'([^ATCGXUatcgxuDRdr])',seq)
-		if cond02 is not None:
-			print "Unexpected character found in sequence:", cond02.group(0)
-			return False
-		cond03 = re.search(r'([^\(\)\.])',basepairs)
-		if cond03 is not None:
-			print "Unexpected character found in base-pair notation:", cond03.group(0)
-			return False
-		cond04 = seq[0]=='D' or seq[0]=='d' or seq[0]=='R' or seq[0]=='r'
-		if not cond04:
-			print "Sequence must begin with one of [DdRr] characters to indicate DNA/RNA strand."
-			return False
-		numleft = len(re.findall(r'\(',basepairs))
-		numright = len(re.findall(r'\)',basepairs))
-		if numleft != numright :
-			print "Unmatched brackets in base-pair notation."
-			return False
-		return True
+	cond01 = len(seq)==len(basepairs)
+	if not cond01:
+		print "Sequence length not the same as basepair notation length."
+		return False
+	cond02 = re.search(r'([^ATCGXUatcgxuDRdr])',seq)
+	if cond02 is not None:
+		print "Unexpected character found in sequence:", cond02.group(0)
+		return False
+	cond03 = re.search(r'([^\(\)\.])',basepairs)
+	if cond03 is not None:
+		print "Unexpected character found in base-pair notation:", cond03.group(0)
+		return False
+	cond04 = seq[0]=='D' or seq[0]=='d' or seq[0]=='R' or seq[0]=='r'
+	if not cond04:
+		print "Sequence must begin with one of [DdRr] characters to indicate DNA/RNA strand."
+		return False
+	numleft = len(re.findall(r'\(',basepairs))
+	numright = len(re.findall(r'\)',basepairs))
+	if numleft != numright :
+		print "Unmatched brackets in base-pair notation."
+		return False
+	return True
 		
 	
 		
@@ -177,6 +258,7 @@ if __name__ == '__main__':
 	if len(sys.argv) > 1:
 		file = sys.argv[1]
 		a = NucObject.fromfile(file)
+		a.toGML('a.gml')
 		
 	
 	
