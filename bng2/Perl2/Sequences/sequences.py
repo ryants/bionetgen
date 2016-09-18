@@ -1,99 +1,182 @@
-import sys
+# Author: John Sekar
+# johnarul.sekar (at) gmail (dot) com
 
-class NucSeq(object):
-	""" A generic nucleotide sequence defined 5'-3'
-	Attributes:
-		seq: A string sequence
-		doublestranded: True/False
-		strand1: DNA/RNA 5'-3'
-		strand2: DNA/RNA/None 3'-5'
+import sys
+import re
+from collections import deque as dq
+
+class BNGNucBase(object):
 	"""
-	doublestranded = False 
-	strand1 = None
-	strand2 = None
-	
-	def __init__(self,seq):
-		self.seq = seq.upper()
-		
+	Attributes:
+	sugar: DNA/RNA
+	type: A/T/C/G/X/U
+	p5: Int or None
+	p3: Int or None
+	b: Int or None
+	c: Int or None
+	fp: 0 or 1
+	"""
+	p5 = None
+	p3 = None
+	c = None
+	b = None
+	fp = 0
+	def __init__(self,sugar,type):
+		self.sugar = sugar
+		self.type = type
+		return
 	def __str__(self):
-		return self.seq
+		s = self.sugar
+		if self.type=='X' or self.type=='x': 
+			t=self.getstatestr('t')
+		else:
+			t=self.getstatestr('t',self.type)
+		p5str = self.getbondstr('p5',self.p5)
+		p3str = self.getbondstr('p3',self.p3)
+		cstr = self.getbondstr('c',self.c)
+		bstr = self.getbondstr('b',self.b)
+		fpstr = self.getstatestr('fp',self.fp)
+		outstr =  s+'('+ ','.join([t,p5str,p3str,cstr,bstr,fpstr])+')'
+		return outstr
+		
+	def __repr__(self):
+		return self.__str__()
+	
+	@staticmethod
+	def getbondstr(comp,bondnum):
+		if bondnum is not None:
+			return comp + '!' + str(bondnum)
+		return comp
+	@staticmethod
+	def getstatestr(comp,state):
+		if state is not None:
+			return comp + '~' + str(state)
+		return comp
+	
+class BNGNucObject(list):
+	'''
+	list of BNGNucBase(s)
+	'''
+	def __str__(self):
+		temp = [x.__str__() for x in self if x is not None]
+		outstr = '.'.join(temp)
+		return outstr
+	
+	@classmethod
+	def fromNucObject(cls,obj):
+		seq = obj.seq
+		basepairs = obj.basepairs
+		
+		baselist = cls([None]*len(seq))
+		
+		openpairs = dq()
+		currentsugar = ''
+		prevbase = None
+		currbase = None
+		prevbase = None
+		bondnum = -1
+		
+		for i,base in enumerate(seq):
+			currbase = i
+			cond_D = base=='D' or base =='d'
+			cond_R = base=='R' or base =='r'
+			if cond_D:
+				currentsugar = 'd'
+				prevbase = None
+				continue
+			if cond_R:
+				currentsugar = 'r'
+				prevbase = None
+				continue
+			baselist[currbase] = BNGNucBase(currentsugar,base)
+			if prevbase is not None:
+				bondnum = bondnum + 1
+				baselist[prevbase].p3 = bondnum
+				baselist[currbase].p5 = bondnum
+			if basepairs[i]=='(':
+				openpairs.append(i)
+			elif basepairs[i]==')':
+				bondnum = bondnum + 1
+				baselist[openpairs.pop()].c = bondnum
+				baselist[i].c = bondnum
+			else:
+				pass
+			prevbase = currbase
+		return baselist
+		
+		
+class NucObject(object):
+	""" A nucleotide object. Could be a combination of many base-pairing strands.
+		seq: string
+		basepairs: string
+		
+		Sequence should be of the form
+			dACGXUrAXUCG
+		where d,r begin a DNA/RNA strand, and ATCGXU are elements of the strand arranged 5'-3'.
+		
+		Basepairs should be of the same length as Sequence and should be of the form
+			(((....)))
+		where ( and ) denote complementary base pairs, and . denotes no base pairing.
+	"""
+	
+	def __init__(self,seq,basepairs=None):
+		self.seq = seq
+		if basepairs==None :
+			self.basepairs = '.'*len(seq)
+		else:
+			self.basepairs = basepairs
+		return
 	
 	@classmethod
 	def fromfile(cls,file):
-		with open(file, "r") as f:
+		'''Makes a nucleotide object from a file.'''	
+		lines = []
+		with open(file,'r') as f:
 			lines = f.readlines()
-		lines = [x.strip() for x in lines]
-		lines = [x for x in lines if x != '']
-		lines = ["".join(x.split()) for x in lines]
-		lines = [x.upper() for x in lines if x[0] != '>']
-		return cls(''.join(lines))
+		lines = [x.strip().rstrip('\r\n') for x in lines]
+		nuc =  cls(lines[0],lines[1])
+		if nuc.verify()==False:
+			nuc = None
+		return nuc
 		
-	def toBNGSpecies(self):
-		strand1_list = [build_base(x,self.strand1) for x in self.seq]
-		strand2_list = []
-		bondnum = 0;
-		numbases = len(strand1_list)
-		for i in range(numbases-1):
-			bondnum = bondnum+1
-			strand1_list[i] = strand1_list[i].replace(",p3,",",p3!"+str(bondnum)+",")
-			strand1_list[i+1] = strand1_list[i+1].replace(",p5,",",p5!"+str(bondnum)+",")
-		if self.strand2 is not None:
-			strand2_list = [build_base(x,self.strand2) for x in sequence_complement(self.seq)]
-			for i in range(numbases-1):
-				bondnum = bondnum+1
-				strand2_list[i] = strand2_list[i].replace(",p5,",",p5!"+str(bondnum)+",")
-				strand2_list[i+1] = strand2_list[i+1].replace(",p3,",",p3!"+str(bondnum)+",")
-			for i in range(numbases):
-				bondnum = bondnum+1
-				strand1_list[i] = strand1_list[i].replace(",c",",c!"+str(bondnum))
-				strand2_list[i] = strand2_list[i].replace(",c",",c!"+str(bondnum))
-			
-		baselist = strand1_list+strand2_list
-		bngspeciesstring = ".".join(baselist)
-		return bngspeciesstring
+	def __str__(self):
+		return self.seq+"\n"+self.basepairs
+
+	def verify(self):
+		return verifyNucleotideObject(self.seq,self.basepairs)
 		
 
-def base_complement(base,basetype='DNA'):
-	dna = {'A':'T','T':'A','U':'A','C':'G','G':'C'}
-	rna = {'A':'U','T':'A','U':'A','C':'G','G':'C'}
-	base = base.upper()
-	if base not in ['A','T','U','C','G']:
-		return None
-	if basetype=='DNA':
-		return dna[base]
-	if basetype=='RNA':
-		return rna[base]
 		
-def sequence_complement(seq,basetype='DNA'):
-	baselist = [base_complement(x,basetype) for x in seq]
-	return ''.join(baselist)
+def verifyNucleotideObject(seq,basepairs):
+		cond01 = len(seq)==len(basepairs)
+		if not cond01:
+			print "Sequence length not the same as basepair notation length."
+			return False
+		cond02 = re.search(r'([^ATCGXUatcgxuDRdr])',seq)
+		if cond02 is not None:
+			print "Unexpected character found in sequence:", cond02.group(0)
+			return False
+		cond03 = re.search(r'([^\(\)\.])',basepairs)
+		if cond03 is not None:
+			print "Unexpected character found in base-pair notation:", cond03.group(0)
+			return False
+		cond04 = seq[0]=='D' or seq[0]=='d' or seq[0]=='R' or seq[0]=='r'
+		if not cond04:
+			print "Sequence must begin with one of [DdRr] characters to indicate DNA/RNA strand."
+			return False
+		numleft = len(re.findall(r'\(',basepairs))
+		numright = len(re.findall(r'\)',basepairs))
+		if numleft != numright :
+			print "Unmatched brackets in base-pair notation."
+			return False
+		return True
 		
-def build_base(base,basetype='DNA'):
-	"""Nuc(b~A~T~C~G~U,na~d~r,p5,p3,c)"""
-	str1 = "b~"+base
-	letter = {'DNA':'d','RNA':'r'};
-	str2 = "na~"+letter[basetype]
-	basestring = "Nuc("+str1+","+str2+",p5,p3,c)"
-	return basestring
 	
-class ssRNA(NucSeq):
-	"""A single stranded RNA sequence. Subclass of NucSeq. """
-	doublestranded = False
-	strand1 = 'RNA'
-	
-class ssDNA(NucSeq):
-	"""A single-stranded DNA sequence. Subclass of NucSeq. """
-	doublestranded = False
-	strand1 = 'DNA'
-	
-class dsDNA(NucSeq):
-	"""A double-stranded RNA sequence. Subclass of NucSeq. """
-	doublestranded = True
-	strand1 = 'DNA'
-	strand2 = 'DNA'
-	
+		
 if __name__ == '__main__':
-	file = sys.argv[1]
-	a = dsDNA.fromfile(file)
-	print a.toBNGSpecies()
+	if len(sys.argv) > 1:
+		file = sys.argv[1]
+		a = NucObject.fromfile(file)
+		
+	
 	
