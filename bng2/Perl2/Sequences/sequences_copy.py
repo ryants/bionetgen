@@ -5,145 +5,7 @@ import sys
 import re
 from collections import deque as dq
 
-class BNGMolecule(object):
-	'''
-	name: molecule name
-	components: list of BNGComponents
-	'''
-	def __init__(self,name,components):
-		self.name = name
-		self.components = components
-		return
-	@classmethod
-	def fromstring(cls,string):
-		lpos = string.find('(')
-		rpos = string.find(')')
-		name = string[:lpos]
-		string2 = string[lpos+1 : rpos]
-		components = [BNGComponent.fromstring(x) for x in string2.split(',')]
-		return cls(name,components)
-		
-	def __repr__(self):
-		outstr = self.name+'('+ ','.join([x.__repr__() for x in self.components])+')'
-		return outstr
-		
-		
-class BNGComponent(object):
-	'''
-	name: component name
-	state: internal state
-	bindingsite: binding site
-	'''
-	def __init__(self,name,state=None,bindingsite=None):
-		self.name = name
-		self.state = state
-		self.bindingsite = bindingsite
-	@classmethod
-	def fromstring(cls,string):
-		'''
-		could be a, a~x, a!+, a!0~x,a~x!0
-		'''
-		tilde_pos = string.find('~')
-		exclm_pos = string.find('!')
-		last_pos = len(string)
-		chop_pos = sorted([x for x in [tilde_pos,exclm_pos] if x!=-1])
-			
-		if(len(chop_pos)==0):
-			return cls(string,None,None)
-		if exclm_pos == -1:
-			return cls(string[0:tilde_pos],string[tilde_pos+1 : ],None)
-		if tilde_pos == -1:	
-			return cls(string[0:exclm_pos],None,string[exclm_pos+1 : ])
-		if tilde_pos < exclm_pos:
-			return cls(string[0:tilde_pos],string[tilde_pos+1:exclm_pos],string[exclm_pos+1:])
-		else:
-			return cls(string[0:exclm_pos],string[exclm_pos+1:tilde_pos],string[tilde_pos+1:])
-				
-	def __repr__(self):
-		str1 = self.name
-		if self.state==None:
-			str2 = ''
-		else:
-			str2 = '~'+self.state
-		if self.bindingsite==None:
-			str3 = ''
-		else:
-			str3 = '!'+self.bindingsite
-		outstr = str1+str2+str3
-		return outstr
-		
-
-class BNGComplex(object):
-	'''molecules: list of molecules'''
-	def __init__(self,molecules):
-		self.molecules = molecules
-	@classmethod
-	def fromstring(cls,string):
-		molecules = [BNGMolecule.fromstring(x) for x in string.split('.')]
-		return cls(molecules)
-	def __repr__(self):
-		outstr = '.'.join([x.__repr__() for x in self.molecules])
-		return outstr
-		
-
-class BNGNucBase(BNGMolecule):
-	@classmethod
-	def new(cls,sugar,type):
-		if sugar=='D' or sugar=='d' or sugar=='R' or sugar=='r':
-			name = sugar.lower()
-		if type=='x' or type=='X':
-			t = 't'
-		else:
-			t = 't~'+type.upper()
-		string = name+'('+t+',p5,p3,b,c,fp~0'+')'
-		complist = [t,'p5','p3','b','c','fp~0']
-		return cls.fromstring(string)
-	
-	indices = {'p5':1,'p3':2,'b':3,'c':4}
-	def addBond(self,loc,bondnum):
-		self.components[indices[loc]].bindingstate = bondnum
-	def deleteBond(self,loc):
-		self.components[indices[loc]].bindingstate = None
-	
-		
-class BNGNucObject(BNGComplex):
-	@classmethod
-	def fromNucObject(cls,obj):
-		seq = obj.seq
-		basepairs = obj.basepairs
-		baselist = [None]*len(seq)
-		
-		openpairs = dq()
-		currentsugar = ''
-		prevbase = None
-		currbase = None
-		bondnum = -1
-		
-		for i,base in enumerate(seq):
-			currbase = i
-			if base=='D' or base =='d' or base=='R' or base=='r':
-				currentsugar = base.lower()
-				prevbase = None
-				continue
-			baselist[currbase] = BNGNucBase.new(currentsugar,base)
-			if prevbase is not None:
-				bondnum = bondnum + 1
-				baselist[prevbase].addBond('p3',bondnum)
-				baselist[currbase].addBond('p5',bondnum)
-			if basepairs[i]=='(':
-				openpairs.append(i)
-			elif basepairs[i]==')':
-				bondnum = bondnum + 1
-				baselist[openpairs.pop()].addBond('c',bondnum)
-				baselist[i].addBond('c',bondnum)
-			else:
-				pass
-			prevbase = currbase
-		return baselist
-		
-		
-
-class BNGNucBase2(object):
+class BNGNucBase(object):
 	"""
 	Attributes:
 	sugar: DNA/RNA
@@ -191,7 +53,7 @@ class BNGNucBase2(object):
 			return comp + '~' + str(state)
 		return comp
 	
-class BNGNucObject2(list):
+class BNGNucObject(list):
 	'''
 	list of BNGNucBase(s)
 	'''
@@ -393,13 +255,10 @@ def verifyNucleotideObject(seq,basepairs):
 	
 		
 if __name__ == '__main__':
-	#if len(sys.argv) > 1:
-	#	file = sys.argv[1]
-	#	a = NucObject.fromfile(file)
-	#	a.toGML('a.gml')
-	
-	a = BNGNucBase.new(sys.argv[1],sys.argv[2])
-	print a
+	if len(sys.argv) > 1:
+		file = sys.argv[1]
+		a = NucObject.fromfile(file)
+		a.toGML('a.gml')
 		
 	
 	

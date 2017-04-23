@@ -1,0 +1,19 @@
+begin parameters
+	k	1
+	C	1
+end parameters
+
+begin molecule types
+	d(t~A~T~C~G~X,p5,p3,c,b,fp~0~1)
+	r(t~A~U~C~G~X,p5,p3,c,b,fp~0~1)
+end molecule types
+
+begin species
+	r(t~C,p5,p3!0,c!52,b,fp~0).r(t~C,p5!0,p3!1,c!50,b,fp~0).r(t~C,p5!1,p3!2,c!48,b,fp~0).r(t~C,p5!2,p3!3,c!46,b,fp~0).r(t~A,p5!3,p3!4,c!17,b,fp~0).r(t~A,p5!4,p3!5,c!15,b,fp~0).r(t~A,p5!5,p3!6,c!13,b,fp~0).r(t~A,p5!6,p3!7,c!11,b,fp~0).r(t~U,p5!7,p3!8,c,b,fp~0).r(t~U,p5!8,p3!9,c,b,fp~0).r(t~A,p5!9,p3!10,c,b,fp~0).r(t~U,p5!10,p3!12,c!11,b,fp~0).r(t~U,p5!12,p3!14,c!13,b,fp~0).r(t~U,p5!14,p3!16,c!15,b,fp~0).r(t~U,p5!16,p3!18,c!17,b,fp~0).r(t~G,p5!18,p3!19,c!28,b,fp~0).r(t~G,p5!19,p3!20,c!26,b,fp~0).r(t~G,p5!20,p3!21,c!24,b,fp~0).r(t~G,p5!21,p3,c!22,b,fp~0).r(t~C,p5,p3!23,c!22,b,fp~0).r(t~C,p5!23,p3!25,c!24,b,fp~0).r(t~C,p5!25,p3!27,c!26,b,fp~0).r(t~C,p5!27,p3!29,c!28,b,fp~0).r(t~A,p5!29,p3!30,c!44,b,fp~0).r(t~A,p5!30,p3!31,c!42,b,fp~0).r(t~A,p5!31,p3!32,c!40,b,fp~0).r(t~A,p5!32,p3!33,c!38,b,fp~0).r(t~A,p5!33,p3!34,c,b,fp~0).r(t~U,p5!34,p3!35,c,b,fp~0).r(t~A,p5!35,p3!36,c,b,fp~0).r(t~U,p5!36,p3!37,c,b,fp~0).r(t~U,p5!37,p3!39,c!38,b,fp~0).r(t~U,p5!39,p3!41,c!40,b,fp~0).r(t~U,p5!41,p3!43,c!42,b,fp~0).r(t~U,p5!43,p3!45,c!44,b,fp~0).r(t~G,p5!45,p3!47,c!46,b,fp~0).r(t~G,p5!47,p3!49,c!48,b,fp~0).r(t~G,p5!49,p3!51,c!50,b,fp~0).r(t~G,p5!51,p3,c!52,b,fp~0)	1
+end species
+
+begin reaction rules
+R1: r(t~C,p5,p3!0,c!52,b,fp~0).r(t~C,p5!0,p3!1,c!50,b,fp~0).r(t~C,p5!1,p3!2,c!48,b,fp~0).r(t~C,p5!2,p3!3,c!46,b,fp~0).r(t~A,p5!3,p3!4,c!17,b,fp~0).r(t~A,p5!4,p3!5,c!15,b,fp~0).r(t~A,p5!5,p3!6,c!13,b,fp~0).r(t~A,p5!6,p3!7,c!11,b,fp~0).r(t~U,p5!7,p3!8,c,b,fp~0).r(t~U,p5!8,p3!9,c,b,fp~0).r(t~A,p5!9,p3!10,c,b,fp~0).r(t~U,p5!10,p3!12,c!11,b,fp~0).r(t~U,p5!12,p3!14,c!13,b,fp~0).r(t~U,p5!14,p3!16,c!15,b,fp~0).r(t~U,p5!16,p3!18,c!17,b,fp~0).r(t~G,p5!18,p3!19,c!28,b,fp~0).r(t~G,p5!19,p3!20,c!26,b,fp~0).r(t~G,p5!20,p3!21,c!24,b,fp~0).r(t~G,p5!21,p3,c!22,b,fp~0).r(t~C,p5,p3!23,c!22,b,fp~0).r(t~C,p5!23,p3!25,c!24,b,fp~0).r(t~C,p5!25,p3!27,c!26,b,fp~0).r(t~C,p5!27,p3!29,c!28,b,fp~0).r(t~A,p5!29,p3!30,c!44,b,fp~0).r(t~A,p5!30,p3!31,c!42,b,fp~0).r(t~A,p5!31,p3!32,c!40,b,fp~0).r(t~A,p5!32,p3!33,c!38,b,fp~0).r(t~A,p5!33,p3!34,c,b,fp~0).r(t~U,p5!34,p3!35,c,b,fp~0).r(t~A,p5!35,p3!36,c,b,fp~0).r(t~U,p5!36,p3!37,c,b,fp~0).r(t~U,p5!37,p3!39,c!38,b,fp~0).r(t~U,p5!39,p3!41,c!40,b,fp~0).r(t~U,p5!41,p3!43,c!42,b,fp~0).r(t~U,p5!43,p3!45,c!44,b,fp~0).r(t~G,p5!45,p3!47,c!46,b,fp~0).r(t~G,p5!47,p3!49,c!48,b,fp~0).r(t~G,p5!49,p3!51,c!50,b,fp~0).r(t~G,p5!51,p3,c!52,b,fp~0)-> 0 k
+end reaction rules
+
+visualize({type=>"conventional"})
