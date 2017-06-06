@@ -465,12 +465,14 @@ sub newRxnRule
 
     # Get forward ratelaw..
     # temporarily add Reference tags as names in the ParamList
-    if (%rrefs) { setRefs(\%rrefs, '', $plist); }
+    if (%rrefs) { setRefs(\%rrefs, '', $plist, 0); }
+    if (%prefs) { setRefs(\%prefs, '', $plist, 1); }
     # Parse and Create the ratelaw
     ( $rl, $err ) = RateLaw::newRateLaw( \$string, $model, $TotalRate, \@reac );
     if ($err) { return [], $err; }
     # unset temporary names of Reference tags
-    if (%rrefs) { unsetRefs(\%rrefs, $plist); }
+    if (%rrefs) { unsetRefs(\%rrefs, $plist, 0); }
+    if (%prefs) { unsetRefs(\%prefs, $plist, 1); }
     # Save the ratelaw
     push @rate_laws, $rl;
 
@@ -484,10 +486,12 @@ sub newRxnRule
 
             # get reverse rate law
             $string =~ s/^\s*,\s*//;
-	        if (%prefs) { setRefs( \%prefs, '', $plist ); }
+	        if (%prefs) { setRefs( \%prefs, '', $plist, 1 ); }
+            if (%rrefs) { setRefs( \%prefs, '', $plist, 0 ); }
 	        ($rl, $err) = RateLaw::newRateLaw( \$string, $model, $TotalRate, \@prod );
 	        if ($err) { return [], $err; }
-	        if (%prefs) { unsetRefs( \%prefs, $plist ); }
+	        if (%prefs) { unsetRefs( \%prefs, $plist, 1 ); }
+            if (%rrefs) { unsetRefs( \%prefs, $plist, 0 ); }
 	        push @rate_laws, $rl;  
         }
         else
@@ -1870,7 +1874,7 @@ sub toXML
 	}
 
 	# RateLaw (need to pass parameter list and reference hash for functional ratelaws!)
-	$ostring .= $rr->RateLaw->toXML( $indent2, $id, $plist, $rr->RRefs );
+	$ostring .= $rr->RateLaw->toXML( $indent2, $id, $plist, $rr->RRefs, $rr->PRefs );
 
 
 	# Write Reactant to Product Map
@@ -4228,10 +4232,11 @@ sub pointer_to_ID
 
 sub setRefs
 {
-	my ($refs, $id, $plist) = @_;
+	my ($refs, $id, $plist, $isProduct) = @_;
     while ( my ($arg,$val) = each %{$refs} )
     {
-		my $oid = pointer_to_ID( $id . "_R", $val );
+        my $label = $isProduct ? "_P" : "_R";
+		my $oid = pointer_to_ID( $id . $label, $val );
 		$plist->set( $arg, $oid, 1, "Local" );
 	}
 	return '';
@@ -4240,7 +4245,7 @@ sub setRefs
 
 sub unsetRefs
 {
-	my ($refs, $plist) = @_;
+	my ($refs, $plist, $isProduct) = @_;
 	foreach my $arg ( keys %{$refs} ) { $plist->deleteLocal($arg); }
 	return '';
 }

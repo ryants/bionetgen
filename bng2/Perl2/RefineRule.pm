@@ -235,14 +235,16 @@ sub newPopulationMappingRule
     {   $TotalRate = 1;   }
  
     # temporarily add Reference tags as names in the ParamList
-	if (%$rrefs) {  setRefs( $rrefs, '', $model->ParamList );  }
+	if (%$rrefs) {  setRefs( $rrefs, '', $model->ParamList, 0 );  }
+	if (%$prefs) {  setRefs( $prefs, '', $model->ParamList, 1 );  }
  
     # Parse and Create the ratelaw
     ( $rl, $err ) = RateLaw::newRateLaw( \$string, $model, $TotalRate, $reac );
 	if ($err) {  return ($err, $rr);  }
  
     # unset temporary names of Reference tags
-    if (%$rrefs) {  unsetRefs( $rrefs, $model->ParamList );  } 
+    if (%$rrefs) {  unsetRefs( $rrefs, $model->ParamList, 0 );  } 
+    if (%$prefs) {  unsetRefs( $prefs, $model->ParamList, 1 );  } 
 
 
 	# Check for syntax error due to extra ratelaw tokens
