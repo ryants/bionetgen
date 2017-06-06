@@ -186,6 +186,7 @@ sub newRateLaw
 		    
         # get name for ratelaw
         my $name = $expr->getName( $model->ParamList, $basename, $force_fcn );
+
         # retreive param with this name
         (my $param, $err) = $model->ParamList->lookup($name);
         if ($err) { return '', $err; }
@@ -924,16 +925,17 @@ sub toXML
     my $indent  = shift @_;
     my $rr_id   = @_ ? shift @_ : '';       # rxn rule id
     my $plist   = @_ ? shift @_ : undef;    # parameter list
-    my $rrefs   = @_ ? shift @_ : undef;    # rxnrule reference hash
+    my $rrefs   = @_ ? shift @_ : undef;    # rxnrule reference hash (reactants)
+    my $prefs   = @_ ? shift @_ : undef;    # rxnrule reference hash (products)
     
     if ( $rl->Type eq "Function" )
     {   # separate handling for Function ratelaws
-        return $rl->toXMLFunction($indent, $rr_id, $plist, $rrefs);
+        return $rl->toXMLFunction($indent, $rr_id, $plist, $rrefs, $prefs);
     }
 
     if ( $rl->Type eq "FunctionProduct" )
-    {   # separate handling for FunctionProduct ratelaws
-        return $rl->toXMLFunctionProduct($indent, $rr_id, $plist, $rrefs);
+    {   # separate handling for FunctionProduct ratelaw
+        return $rl->toXMLFunctionProduct($indent, $rr_id, $plist, $rrefs, $prefs);
     }
 
     if ( $rl->Type eq "Arrhenius" )
@@ -1005,7 +1007,8 @@ sub toXMLFunction
     my $rr_id   = (@_) ? shift : '';       # rxn rule id
     my $plist   = (@_) ? shift : undef;    # parameter list
     my $rrefs   = (@_) ? shift : undef;    # rxnrule reference hash
-
+    my $prefs   = @_ ? shift @_ : undef;   # rxnrule reference hash (products)
+    
     # define ratelaw id
     my $id;
     if ( $rr_id ) 
@@ -1035,8 +1038,18 @@ sub toXMLFunction
     foreach my $arg ( @{$fun->Args} )
     {
         my $indent3 = $indent2.'  ';
-        my $ptr = $rrefs->{$arg};
-        my $oid = RxnRule::pointer_to_ID( $rr_id . "_R", $ptr );
+        my ($ptr, $label);
+        if (defined $rrefs->{$arg})
+        {
+            $ptr = $rrefs->{$arg}; 
+            $label = "_R";
+        }
+        else
+        {
+            $ptr = $prefs->{$arg};
+            $label = "_P";
+        }
+        my $oid = RxnRule::pointer_to_ID( $rr_id . $label, $ptr );
         $string .= $indent3 . "<Argument";
         $string .= " id=\"" . $arg . "\"";
         $string .= " type=\"ObjectReference\"";
@@ -1064,7 +1077,8 @@ sub toXMLFunctionProduct
     my $rr_id   = @_ ? shift @_ : '';       # rxn rule id
     my $plist   = @_ ? shift @_ : undef;    # parameter list
     my $rrefs   = @_ ? shift @_ : undef;    # rxnrule reference hash
-
+    my $prefs   = @_ ? shift @_ : undef;    # rxnrule reference hash (products)
+    
     my $err;
 
     # define ratelaw id
@@ -1097,7 +1111,11 @@ sub toXMLFunctionProduct
     foreach my $arg ( @{$fun1->Args} )
     {
         my $indent3 = $indent2.'  ';
-        my $ptr = $rrefs->{$arg};
+        my $ptr;
+        if (defined $rrefs->{$arg})
+        { $ptr = $rrefs->{$arg}; } 
+        else
+        { $ptr = $prefs->{$arg}; }
         my $oid = RxnRule::pointer_to_ID( $rr_id . "_R", $ptr );
         $string .= $indent3 . "<Argument";
         $string .= " id=\"" . $arg . "\"";
